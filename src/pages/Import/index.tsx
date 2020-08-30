@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-
 import filesize from 'filesize';
 
 import Header from '../../components/Header';
@@ -19,23 +18,34 @@ interface FileProps {
 }
 
 const Import: React.FC = () => {
-  const [uploadedFiles, setUploadedFiles] = useState<FileProps[]>([]);
+  const [filesToUpload, setFilesToUpload] = useState<FileProps[]>([]);
   const history = useHistory();
 
   async function handleUpload(): Promise<void> {
-    const data = new FormData();
+    if (!filesToUpload.length) return;
 
-    // TODO
+    const file = filesToUpload[0];
+    const data = new FormData();
+    data.append('file', file.file, file.name);
 
     try {
-      // await api.post('/transactions/import', data);
+      await api.post('/transactions/import', data);
+
+      setFilesToUpload([]);
+      history.push('/');
     } catch (err) {
-      // console.log(err.response.error);
+      console.error(err.response.error);
     }
   }
 
-  function submitFile(files: File[]): void {
-    // TODO
+  function attachFiles(files: File[]): void {
+    const serializedFiles = files.map(file => ({
+      file,
+      name: file.name,
+      readableSize: filesize(file.size),
+    }));
+
+    setFilesToUpload(serializedFiles);
   }
 
   return (
@@ -44,8 +54,8 @@ const Import: React.FC = () => {
       <Container>
         <Title>Importar uma transação</Title>
         <ImportFileContainer>
-          <Upload onUpload={submitFile} />
-          {!!uploadedFiles.length && <FileList files={uploadedFiles} />}
+          <Upload onUpload={attachFiles} />
+          {!!filesToUpload.length && <FileList files={filesToUpload} />}
 
           <Footer>
             <p>
